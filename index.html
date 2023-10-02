@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Wasm Mandelbrot</title>
+    <style>
+        body {
+            background-color: black;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+        canvas {
+            border: 1px solid white;
+        }
+    </style>
+    <script type="module">
+        import init, { draw } from "./pkg/wasm_mandelbrot.js";
+
+        async function run() {
+            await init();
+
+            const canvas = document.getElementById('canvas');
+            let zoom = 1.0;
+            let offsetX = 0.0;
+            let offsetY = 0.0;
+
+            function render() {
+                draw(canvas, zoom, offsetX, offsetY);
+                requestAnimationFrame(render);
+            }
+
+            canvas.addEventListener('wheel', (event) => {
+                const delta = Math.sign(event.deltaY);
+                zoom *= Math.pow(1.1, delta);
+                event.preventDefault();
+            });
+
+            canvas.addEventListener('mousedown', (event) => {
+                const startX = event.clientX;
+                const startY = event.clientY;
+
+                function onMouseMove(event) {
+                    offsetX += (event.clientX - startX) / (zoom * canvas.width);
+                    offsetY += (event.clientY - startY) / (zoom * canvas.height);
+                    event.preventDefault();
+                }
+
+                function onMouseUp() {
+                    canvas.removeEventListener('mousemove', onMouseMove);
+                    canvas.removeEventListener('mouseup', onMouseUp);
+                }
+
+                canvas.addEventListener('mousemove', onMouseMove);
+                canvas.addEventListener('mouseup', onMouseUp);
+            });
+
+            render();
+        }
+
+        run();
+    </script>
+</head>
+<body>
+    <canvas id="canvas" width="800" height="600"></canvas>
+</body>
+</html>
+

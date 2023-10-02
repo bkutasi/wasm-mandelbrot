@@ -2,11 +2,14 @@
 
 ## Description
 
-This repository contains an implementation of the Mandelbrot set using WebAssembly (WASM).
+This repository contains an implementation of the Mandelbrot set using WebAssembly (WASM). 
+
+Try the demo at
+ https://kutasi.dev/wasm-mandelbrot
 
 ## Features
 
-- Fast and efficient rendering of the Mandelbrot set.
+- (not so) Fast and efficient rendering of the Mandelbrot set.
 - Interactive zoom and pan functionality.
 - High-resolution image export.
 
