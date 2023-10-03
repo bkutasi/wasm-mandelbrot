@@ -11,7 +11,7 @@ pub fn start() -> Result<(), JsValue> {
 }
 
 #[wasm_bindgen] // This attribute indicates that the following function is accessible from JavaScript.
-pub fn draw(canvas: HtmlCanvasElement, zoom: f64, offsetX: f64, offsetY: f64) { // The draw function takes a canvas element and parameters for zoom and offsets.
+pub fn draw(canvas: HtmlCanvasElement, zoom: f64, offsetX: f64, offsetY: f64, resolution: f64) { // The draw function takes a canvas element and parameters for zoom and offsets.
     let context = canvas
         .get_context("2d") // Getting a 2D rendering context from the canvas.
         .unwrap() // Unwrapping the Result.
@@ -24,8 +24,8 @@ pub fn draw(canvas: HtmlCanvasElement, zoom: f64, offsetX: f64, offsetY: f64) { 
 
     context.clear_rect(0.0, 0.0, width, height); // Clearing the entire canvas.
 
-    for x in 0..width as i32 { // Iterating over each pixel in the width of the canvas.
-        for y in 0..height as i32 { // Iterating over each pixel in the height of the canvas.
+    for x in (0..width as i32).step_by((1.0 / resolution) as usize) { // Iterating over each pixel in the width of the canvas.
+        for y in (0..height as i32).step_by((1.0 / resolution) as usize) { // Iterating over each pixel in the height of the canvas.
             let mut zx = 1.5 * (x as f64 - width / 2.0) / (0.5 * zoom * width) + offsetX; // Calculating zx based on x, zoom and offsetX.
             let mut zy = (y as f64 - height / 2.0) / (0.5 * zoom * height) + offsetY; // Calculating zy based on y, zoom and offsetY.
 
@@ -48,7 +48,7 @@ pub fn draw(canvas: HtmlCanvasElement, zoom: f64, offsetX: f64, offsetY: f64) { 
 
             let color = if iter < 999 { iter % 256 } else { 0 }; // Determining color based on iteration count.
             context.set_fill_style(&JsValue::from_str(&format!("rgb({},{},{})", color, color, color))); // Setting fill style with determined color.
-            context.fill_rect(x as f64, y as f64, 1.0, 1.0); // Filling a rectangle at (x,y) with size 1x1.
+            context.fill_rect(x as f64, y as f64, resolution, resolution); // Filling a rectangle at (x,y) with size 1x1.
                                                              //
         
             // Log the current state
