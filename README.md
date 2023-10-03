@@ -34,14 +34,13 @@ To run the project, start a local server in the root directory of the project. Y
 npx http-server .
 ```
 
-Then, open your browser and navigate to \`localhost:8000\`.
+Then, open your browser and navigate to `localhost:8000`.
 
 ## Contributing
 
-Contributions are welcome! Please read the contributing guidelines before making any changes.
+Contributions are welcome! Open an issue for any suggestions.
 
 ## License
 
-This project is licensed under the GPLv3 License. See \`LICENSE\` for more information.
-
+This project is licensed under the GPLv3 License.
 
