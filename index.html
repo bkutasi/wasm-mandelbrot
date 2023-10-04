@@ -29,16 +29,19 @@
         let offsetY = 0.0;
 
         function render() {
+            const start = performance.now();
             draw(canvas, zoom, offsetX, offsetY, isPanning ? 0.5 : 1.0);
-            if (!isPanning) {
-                requestAnimationFrame(render);
-            }
+            const end = performance.now();
+            const renderTime = end - start;
+
+            console.log(`Render time: ${renderTime.toFixed(2)} ms`);
         }
 
         canvas.addEventListener('wheel', (event) => {
             const delta = Math.sign(event.deltaY);
             zoom *= Math.pow(1.1, delta);
             event.preventDefault();
+	    render();
         });
 
         canvas.addEventListener('mousedown', (event) => {
@@ -50,11 +53,11 @@
                 offsetX += (event.clientX - startX) / (zoom * canvas.width);
                 offsetY += (event.clientY - startY) / (zoom * canvas.height);
                 event.preventDefault();
+		render();
             }
 
             function onMouseUp() {
                 isPanning = false;
-                render();
                 canvas.removeEventListener('mousemove', onMouseMove);
                 canvas.removeEventListener('mouseup', onMouseUp);
             }
@@ -62,10 +65,8 @@
             canvas.addEventListener('mousemove', onMouseMove);
             canvas.addEventListener('mouseup', onMouseUp);
         });
-
         render();
     }
-
     run();
 </script>
 </head>

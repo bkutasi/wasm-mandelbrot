@@ -49,10 +49,6 @@ pub fn draw(canvas: HtmlCanvasElement, zoom: f64, offsetX: f64, offsetY: f64, re
             let color = if iter < 999 { iter % 256 } else { 0 }; // Determining color based on iteration count.
             context.set_fill_style(&JsValue::from_str(&format!("rgb({},{},{})", color, color, color))); // Setting fill style with determined color.
             context.fill_rect(x as f64, y as f64, resolution, resolution); // Filling a rectangle at (x,y) with size 1x1.
-                                                             //
-        
-            // Log the current state
-            info!("x: {}, y: {}, iter: {}, color: {}", x, y, iter, color);
         }
     }
 }
