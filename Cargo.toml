@@ -10,6 +10,8 @@ edition = "2018"
 log = "0.4"
 wasm-bindgen = "0.2.87"
 console_log = "0.2"
+rayon = "1.5" # Added rayon
+wasm-bindgen-rayon = "1.0" # Added wasm-bindgen-rayon
 
 [dependencies.console_error_panic_hook]
 version = "0.1.6"

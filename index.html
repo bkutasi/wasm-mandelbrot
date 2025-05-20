@@ -17,55 +17,119 @@
         }
     </style>
 <script type="module">
-    import init, { draw } from "./pkg/wasm_mandelbrot.js";
+    import init, { draw, memory, free_buffer, init_thread_pool } from "./pkg/wasm_mandelbrot.js";
 
     async function run() {
+        // Regular wasm-bindgen initialization.
         await init();
-        let isPanning = false;
+
+        // Initialize the wasm-bindgen-rayon thread pool
+        // This should be done after init() and before any calls to threaded Wasm functions.
+        try {
+            console.log("Initializing thread pool with", navigator.hardwareConcurrency, "threads.");
+            await init_thread_pool(navigator.hardwareConcurrency);
+            console.log("Thread pool initialized successfully.");
+        } catch (e) {
+            console.error("Failed to initialize thread pool:", e);
+            // Fallback or error handling if threads are not supported or something goes wrong.
+            // For this example, we'll just log the error and continue with single-threaded execution.
+        }
 
         const canvas = document.getElementById('canvas');
-        let zoom = 1.0;
-        let offsetX = 0.0;
-        let offsetY = 0.0;
+        const ctx = canvas.getContext('2d');
+
+        // State variables
+        let needsRender = false;
+        let currentZoom = 1.0;
+        let currentOffsetX = 0.0;
+        let currentOffsetY = 0.0;
+        let isPanning = false; // Tracks if panning is active (for resolution change)
+        
+        // Panning specific state
+        let lastX = 0;
+        let lastY = 0;
 
         function render() {
             const start = performance.now();
-            draw(canvas, zoom, offsetX, offsetY, isPanning ? 0.5 : 1.0);
+            const width = canvas.width;
+            const height = canvas.height;
+            // Use isPanning for resolution, and current state for drawing parameters
+            const resolution = isPanning ? 0.5 : 1.0;
+
+            const pixelsPtr = draw(width, height, currentZoom, currentOffsetX, currentOffsetY, resolution);
+            const pixelData = new Uint8ClampedArray(memory.buffer, pixelsPtr, width * height * 4);
+            const imageData = new ImageData(pixelData, width, height);
+            ctx.putImageData(imageData, 0, 0);
+
+            free_buffer(pixelsPtr, width * height * 4);
+
             const end = performance.now();
             const renderTime = end - start;
+            console.log(`Render time: ${renderTime.toFixed(2)} ms (Res: ${resolution})`);
+        }
 
-            console.log(`Render time: ${renderTime.toFixed(2)} ms`);
+        function animationLoop() {
+            if (needsRender) {
+                render();
+                needsRender = false;
+            }
+            requestAnimationFrame(animationLoop);
         }
 
         canvas.addEventListener('wheel', (event) => {
             const delta = Math.sign(event.deltaY);
-            zoom *= Math.pow(1.1, delta);
+            // Update currentZoom based on its previous value
+            currentZoom *= Math.pow(1.1, delta);
+            needsRender = true;
             event.preventDefault();
-	    render();
         });
 
+        // This onMouseMove and onMouseUp are defined to be used by the mousedown listener below
+        function onMouseMove(moveEvent) {
+            if (!isPanning) return;
+
+            const deltaX = moveEvent.clientX - lastX;
+            const deltaY = moveEvent.clientY - lastY;
+
+            lastX = moveEvent.clientX;
+            lastY = moveEvent.clientY;
+
+            currentOffsetX += deltaX / (currentZoom * canvas.width);
+            currentOffsetY += deltaY / (currentZoom * canvas.height);
+            needsRender = true;
+            moveEvent.preventDefault();
+        }
+
+        function onMouseUp() {
+            if (isPanning) {
+                isPanning = false;
+                needsRender = true; // Trigger a final high-resolution render
+            }
+            // Clean up listeners specific to panning:
+            // Remove from canvas where they were specifically added
+            canvas.removeEventListener('mousemove', onMouseMove);
+            canvas.removeEventListener('mouseup', onMouseUp);
+            // The window listener for mouseup was {once: true}, so it cleans itself up.
+            // If it weren't {once: true}, we'd need: window.removeEventListener('mouseup', onMouseUp);
+        }
+        
+        // Main mousedown listener
         canvas.addEventListener('mousedown', (event) => {
             isPanning = true;
-            const startX = event.clientX;
-            const startY = event.clientY;
-
-            function onMouseMove(event) {
-                offsetX += (event.clientX - startX) / (zoom * canvas.width);
-                offsetY += (event.clientY - startY) / (zoom * canvas.height);
-                event.preventDefault();
-		render();
-            }
-
-            function onMouseUp() {
-                isPanning = false;
-                canvas.removeEventListener('mousemove', onMouseMove);
-                canvas.removeEventListener('mouseup', onMouseUp);
-            }
-
+            lastX = event.clientX;
+            lastY = event.clientY;
+            needsRender = true; // Flag for render, potentially low-res if already panning
+            
+            // Attach listeners for the drag part of the pan
             canvas.addEventListener('mousemove', onMouseMove);
             canvas.addEventListener('mouseup', onMouseUp);
+            // Also listen on window for mouseup to catch cases where mouse is released outside canvas
+            window.addEventListener('mouseup', onMouseUp, { once: true }); 
         });
-        render();
+        
+        // Initial render and start animation loop
+        render(); 
+        requestAnimationFrame(animationLoop);
     }
     run();
 </script>
